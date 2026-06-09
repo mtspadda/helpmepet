@@ -1,1 +1,46 @@
-docker exec petchat-ollama ollama pull gemma3:4b
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: petchat-postgres
+    environment:
+      POSTGRES_DB: petchat
+      POSTGRES_USER: petuser
+      POSTGRES_PASSWORD: petpass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U petuser -d petchat"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ollama:
+    image: ollama/ollama
+    container_name: petchat-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    # Remova o bloco 'deploy' abaixo se não tiver GPU
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: [gpu]
+
+  # Opcional: interface web para gerenciar o Ollama
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: petchat-webui
+    ports:
+      - "3000:8080"
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+    depends_on:
+      - ollama
+
+volumes:
+  postgres_data:
+  ollama_data:
