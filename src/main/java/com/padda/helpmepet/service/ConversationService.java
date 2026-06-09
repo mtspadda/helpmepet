@@ -1,5 +1,6 @@
 package com.padda.helpmepet.service;
 
+import com.padda.helpmepet.dto.ConversationSummaryDto;
 import com.padda.helpmepet.dto.OllamaRequest;
 import com.padda.helpmepet.model.Conversation;
 import com.padda.helpmepet.model.Message;
@@ -94,5 +95,24 @@ public class ConversationService {
         });
 
     }
-    
+
+     public List<ConversationSummaryDto> listByUser(Long userId) {
+        return conversationRepository.findByUserIdOrderByUpdatedAtDesc(userId)
+                .stream()
+                .map(c -> new ConversationSummaryDto(c.getId(), c.getTitle(), c.getUpdatedAt()))
+                .toList();
+     }
+
+     public List<Message> getMessage(Long conversationId, Long userId){
+        conversationRepository.findByIdAndUserId(conversationId, userId)
+                .orElseThrow(()-> new RuntimeException("Conversa nao encontrada"));
+        return messageRepository.findByConversationIdOrderByCreatedAtAsc(conversationId);
+     }
+
+     @Transactional
+    public void deleteConversation(Long conversationId, Long userId){
+        Conversation conv = conversationRepository.findByIdAndUserId(conversationId, userId)
+                .orElseThrow(()-> new RuntimeException("Conversa nao encontrada"));
+        conversationRepository.delete(conv);
+     }
 }
